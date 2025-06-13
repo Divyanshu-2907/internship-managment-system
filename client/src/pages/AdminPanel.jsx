@@ -32,6 +32,7 @@ import {
   CircularProgress,
   Tooltip,
   DialogContentText,
+  Container,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import {
@@ -40,10 +41,12 @@ import {
   Delete as DeleteIcon,
   Download as DownloadIcon,
   Description as DescriptionIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { toast } from 'react-toastify';
+import { motion } from 'framer-motion';
 
 import {
   addIntern,
@@ -53,6 +56,10 @@ import {
   fetchInterns,
 } from '../store/slices/internSlice';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AnimatedButton from '../components/AnimatedButton';
+import PageTransition from '../components/PageTransition';
+import AnimatedCard from '../components/AnimatedCard';
+import AnimatedIcon from '../components/AnimatedIcon';
 
 const validationSchema = yup.object({
   name: yup.string().required('Name is required'),
@@ -72,9 +79,15 @@ const validationSchema = yup.object({
 });
 
 const TabPanel = ({ children, value, index }) => (
-  <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-  </div>
+  <motion.div
+    role="tabpanel"
+    hidden={value !== index}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+  >
+    {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+  </motion.div>
 );
 
 const InternTable = ({
@@ -88,7 +101,7 @@ const InternTable = ({
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" p={3}>
-        <CircularProgress />
+        <LoadingSpinner />
       </Box>
     );
   }
@@ -102,17 +115,17 @@ const InternTable = ({
   }
 
   return (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 3 }}>
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Department</TableCell>
-            <TableCell>Mentor</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Performance</TableCell>
-            <TableCell>Actions</TableCell>
+            <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
+            <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+            <TableCell sx={{ fontWeight: 700 }}>Department</TableCell>
+            <TableCell sx={{ fontWeight: 700 }}>Mentor</TableCell>
+            <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+            <TableCell sx={{ fontWeight: 700 }}>Performance</TableCell>
+            <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -132,6 +145,7 @@ const InternTable = ({
                       ? 'primary'
                       : 'error'
                   }
+                  sx={{ fontWeight: 600 }}
                 />
               </TableCell>
               <TableCell>
@@ -139,24 +153,32 @@ const InternTable = ({
               </TableCell>
               <TableCell>
                 <Tooltip title="Edit">
-                  <IconButton onClick={() => onEdit(intern)} size="small">
-                    <EditIcon />
-                  </IconButton>
+                  <span style={{ display: 'inline-flex' }}>
+                    <AnimatedButton onClick={() => onEdit(intern)} size="small">
+                      <EditIcon />
+                    </AnimatedButton>
+                  </span>
                 </Tooltip>
                 <Tooltip title="Delete">
-                  <IconButton onClick={() => onDelete(intern.id)} size="small" color="error">
-                    <DeleteIcon />
-                  </IconButton>
+                  <span style={{ display: 'inline-flex' }}>
+                    <AnimatedButton onClick={() => onDelete(intern.id)} size="small" color="error" sx={{ ml: 1 }}>
+                      <DeleteIcon />
+                    </AnimatedButton>
+                  </span>
                 </Tooltip>
                 <Tooltip title="Generate Certificate">
-                  <IconButton onClick={() => onGenerateCertificate(intern.id)} size="small" color="primary">
-                    <DescriptionIcon />
-                  </IconButton>
+                  <span style={{ display: 'inline-flex' }}>
+                    <AnimatedButton onClick={() => onGenerateCertificate(intern.id)} size="small" color="primary" sx={{ ml: 1 }}>
+                      <DescriptionIcon />
+                    </AnimatedButton>
+                  </span>
                 </Tooltip>
                 <Tooltip title="Generate LOR">
-                  <IconButton onClick={() => onGenerateLOR(intern.id)} size="small" color="secondary">
-                    <DownloadIcon />
-                  </IconButton>
+                  <span style={{ display: 'inline-flex' }}>
+                    <AnimatedButton onClick={() => onGenerateLOR(intern.id)} size="small" color="secondary" sx={{ ml: 1 }}>
+                      <DownloadIcon />
+                    </AnimatedButton>
+                  </span>
                 </Tooltip>
               </TableCell>
             </TableRow>
@@ -201,12 +223,19 @@ const InternFormDialog = ({
   });
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+      PaperProps={{
+        component: motion.div,
+        initial: { opacity: 0, scale: 0.9, y: 50 },
+        animate: { opacity: 1, scale: 1, y: 0 },
+        transition: { duration: 0.3 },
+      }}
+    >
       <DialogTitle>
-        {initialValues ? 'Edit Intern' : 'Add New Intern'}
+        <Typography variant="h6" fontWeight={600}>{initialValues ? 'Edit Intern' : 'Add New Intern'}</Typography>
       </DialogTitle>
       <form onSubmit={formik.handleSubmit}>
-        <DialogContent>
+        <DialogContent dividers>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -283,22 +312,36 @@ const InternFormDialog = ({
               />
             </Grid>
             <Grid item xs={12}>
-              <FormControl fullWidth>
+              <TextField
+                fullWidth
+                name="skills"
+                label="Skills (comma-separated)"
+                value={formik.values.skills.join(', ')}
+                onChange={(e) => formik.setFieldValue('skills', e.target.value.split(',').map(s => s.trim()))}
+                error={formik.touched.skills && Boolean(formik.errors.skills)}
+                helperText={formik.touched.skills && formik.errors.skills}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth error={formik.touched.paymentStatus && Boolean(formik.errors.paymentStatus)}>
                 <InputLabel>Payment Status</InputLabel>
                 <Select
                   name="paymentStatus"
+                  label="Payment Status"
                   value={formik.values.paymentStatus}
                   onChange={formik.handleChange}
-                  error={formik.touched.paymentStatus && Boolean(formik.errors.paymentStatus)}
                 >
-                  <MenuItem value="unpaid">Unpaid</MenuItem>
-                  <MenuItem value="partial">Partial</MenuItem>
                   <MenuItem value="paid">Paid</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="unpaid">Unpaid</MenuItem>
                 </Select>
+                {formik.touched.paymentStatus && formik.errors.paymentStatus && (
+                  <Typography variant="caption" color="error">{formik.errors.paymentStatus}</Typography>
+                )}
               </FormControl>
             </Grid>
             {formik.values.paymentStatus !== 'unpaid' && (
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   name="paymentAmount"
@@ -311,84 +354,115 @@ const InternFormDialog = ({
                 />
               </Grid>
             )}
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  name="status"
+                  label="Status"
+                  value={formik.values.status}
+                  onChange={formik.handleChange}
+                >
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                multiline
-                rows={4}
-                name="feedback"
-                label="Feedback"
-                value={formik.values.feedback}
+                name="performanceRating"
+                label="Performance Rating (0-5)"
+                type="number"
+                inputProps={{ min: 0, max: 5, step: 0.5 }}
+                value={formik.values.performanceRating}
                 onChange={formik.handleChange}
+                error={formik.touched.performanceRating && Boolean(formik.errors.performanceRating)}
+                helperText={formik.touched.performanceRating && formik.errors.performanceRating}
               />
             </Grid>
             <Grid item xs={12}>
-              <Typography component="legend">Performance Rating</Typography>
-              <Rating
-                name="performanceRating"
-                value={formik.values.performanceRating}
-                onChange={(_, value) => formik.setFieldValue('performanceRating', value)}
-                precision={0.5}
+              <TextField
+                fullWidth
+                name="feedback"
+                label="Feedback"
+                multiline
+                rows={3}
+                value={formik.values.feedback}
+                onChange={formik.handleChange}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading || !formik.isValid || formik.isSubmitting}
-          >
-            {loading ? <CircularProgress size={24} /> : initialValues ? 'Update' : 'Add'}
-          </Button>
+          <AnimatedButton onClick={onClose}>Cancel</AnimatedButton>
+          <AnimatedButton type="submit" variant="contained" disabled={loading}>
+            {loading ? <CircularProgress size={24} color="inherit" /> : (initialValues ? 'Update Intern' : 'Add Intern')}
+          </AnimatedButton>
         </DialogActions>
       </form>
     </Dialog>
   );
 };
 
-const DeleteConfirmationDialog = ({ open, onClose, onConfirm, internName }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Confirm Delete</DialogTitle>
-    <DialogContent>
+const DeleteConfirmationDialog = ({ open, onClose, onConfirm, internName, loading }) => (
+  <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
+    PaperProps={{
+      component: motion.div,
+      initial: { opacity: 0, scale: 0.9, y: 50 },
+      animate: { opacity: 1, scale: 1, y: 0 },
+      transition: { duration: 0.3 },
+    }}
+  >
+    <DialogTitle>
+      <Typography variant="h6" fontWeight={600}>Delete Intern</Typography>
+    </DialogTitle>
+    <DialogContent dividers>
       <DialogContentText>
-        Are you sure you want to delete {internName}? This action cannot be undone.
+        Are you sure you want to delete intern <b>{internName}</b>? This action cannot be undone.
       </DialogContentText>
     </DialogContent>
     <DialogActions>
-      <Button onClick={onClose}>Cancel</Button>
-      <Button onClick={onConfirm} color="error" variant="contained">
-        Delete
-      </Button>
+      <AnimatedButton onClick={onClose}>Cancel</AnimatedButton>
+      <AnimatedButton onClick={onConfirm} color="error" variant="contained" disabled={loading}>
+        {loading ? <CircularProgress size={24} color="inherit" /> : 'Delete'}
+      </AnimatedButton>
     </DialogActions>
   </Dialog>
 );
 
 const AdminPanel = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { interns, loading, error } = useSelector((state) => state.intern);
-  const [tabValue, setTabValue] = useState(0);
+  const [currentTab, setCurrentTab] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [editingIntern, setEditingIntern] = useState(null);
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
   const [internToDelete, setInternToDelete] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchInterns());
-  }, [dispatch]);
+    fetchInternsData();
+  }, []);
+
+  const fetchInternsData = async () => {
+    try {
+      setRefreshing(true);
+      await dispatch(fetchInterns()).unwrap();
+    } catch (err) {
+      toast.error(err.message || 'Failed to fetch interns');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
+    setCurrentTab(newValue);
   };
 
   const handleOpenDialog = (intern) => {
-    if (intern) {
-      setEditingIntern(intern);
-    } else {
-      setEditingIntern(null);
-    }
+    setEditingIntern(intern);
     setOpenDialog(true);
   };
 
@@ -400,146 +474,141 @@ const AdminPanel = () => {
   const handleSubmit = async (values) => {
     try {
       if (editingIntern) {
-        await dispatch(updateIntern({
-          ...editingIntern,
-          ...values,
-          startDate: values.startDate?.toISOString() || '',
-          endDate: values.endDate?.toISOString() || '',
-        })).unwrap();
+        await dispatch(updateIntern({ id: editingIntern.id, ...values })).unwrap();
       } else {
-        await dispatch(addIntern({
-          id: Date.now().toString(),
-          ...values,
-          startDate: values.startDate?.toISOString() || '',
-          endDate: values.endDate?.toISOString() || '',
-        })).unwrap();
+        await dispatch(addIntern(values)).unwrap();
       }
       handleCloseDialog();
-    } catch (error) {
-      toast.error(error.message || 'An error occurred');
-      throw error;
+    } catch (err) {
+      toast.error(err.message || 'Failed to save intern');
     }
   };
 
   const handleDeleteClick = (internId) => {
-    const intern = interns.find((i) => i.id === internId);
-    setInternToDelete(intern);
-    setOpenDeleteDialog(true);
+    setInternToDelete(interns.find(intern => intern.id === internId));
+    setOpenDeleteConfirm(true);
   };
 
   const handleDeleteConfirm = async () => {
-    try {
-      await dispatch(removeIntern(internToDelete.id)).unwrap();
-      toast.success('Intern deleted successfully');
-      setOpenDeleteDialog(false);
-      setInternToDelete(null);
-    } catch (error) {
-      toast.error(error.message || 'An error occurred');
+    if (internToDelete) {
+      try {
+        await dispatch(removeIntern(internToDelete.id)).unwrap();
+        toast.success('Intern deleted successfully');
+        setOpenDeleteConfirm(false);
+        setInternToDelete(null);
+      } catch (err) {
+        toast.error(err.message || 'Failed to delete intern');
+      }
     }
   };
 
   const handleGenerateCertificate = async (internId) => {
-    try {
-      // TODO: Implement certificate generation
-      toast.info('Certificate generation coming soon');
-    } catch (error) {
-      toast.error(error.message || 'An error occurred');
-    }
+    toast.info(`Generating certificate for intern ${internId}`);
+    // TODO: Implement certificate generation logic
   };
 
   const handleGenerateLOR = async (internId) => {
-    try {
-      // TODO: Implement LOR generation
-      toast.info('LOR generation coming soon');
-    } catch (error) {
-      toast.error(error.message || 'An error occurred');
-    }
+    toast.info(`Generating LOR for intern ${internId}`);
+    // TODO: Implement LOR generation logic
   };
 
-  const activeInterns = interns.filter((intern) => intern.status === 'active');
-  const completedInterns = interns.filter((intern) => intern.status === 'completed');
-  const terminatedInterns = interns.filter((intern) => intern.status === 'terminated');
-
-  if (error) {
-    return (
-      <Box p={3}>
-        <Alert severity="error">{error}</Alert>
-      </Box>
-    );
+  if (loading && !refreshing) {
+    return <LoadingSpinner message="Loading admin panel..." />;
   }
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Admin Panel</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
+    <PageTransition>
+      <Container maxWidth="xl">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          Add Intern
-        </Button>
-      </Box>
+          <Box>
+            <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
+              Admin Panel
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Manage interns, settings, and system configurations
+            </Typography>
+          </Box>
+        </motion.div>
 
-      <Card>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab label={`Active (${activeInterns.length})`} />
-            <Tab label={`Completed (${completedInterns.length})`} />
-            <Tab label={`Terminated (${terminatedInterns.length})`} />
-          </Tabs>
-        </Box>
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ mb: 3 }}
+        >
+          <Tab label="Interns" />
+          <Tab label="Settings" />
+        </Tabs>
 
-        <TabPanel value={tabValue} index={0}>
-          <InternTable
-            interns={activeInterns}
-            onEdit={handleOpenDialog}
-            onDelete={handleDeleteClick}
-            onGenerateCertificate={handleGenerateCertificate}
-            onGenerateLOR={handleGenerateLOR}
-            loading={loading}
-          />
+        <TabPanel value={currentTab} index={0}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+              <AnimatedButton
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenDialog(null)}
+                delay={0.3}
+              >
+                Add Intern
+              </AnimatedButton>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Tooltip title="Refresh">
+                  <IconButton onClick={fetchInternsData} disabled={refreshing} sx={{ ml: 1 }}>
+                    {refreshing ? <CircularProgress size={20} /> : <RefreshIcon />}
+                  </IconButton>
+                </Tooltip>
+              </motion.div>
+            </Box>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            <InternTable
+              interns={interns}
+              onEdit={handleOpenDialog}
+              onDelete={handleDeleteClick}
+              onGenerateCertificate={handleGenerateCertificate}
+              onGenerateLOR={handleGenerateLOR}
+              loading={loading}
+            />
+          </motion.div>
         </TabPanel>
-        <TabPanel value={tabValue} index={1}>
-          <InternTable
-            interns={completedInterns}
-            onEdit={handleOpenDialog}
-            onDelete={handleDeleteClick}
-            onGenerateCertificate={handleGenerateCertificate}
-            onGenerateLOR={handleGenerateLOR}
-            loading={loading}
-          />
-        </TabPanel>
-        <TabPanel value={tabValue} index={2}>
-          <InternTable
-            interns={terminatedInterns}
-            onEdit={handleOpenDialog}
-            onDelete={handleDeleteClick}
-            onGenerateCertificate={handleGenerateCertificate}
-            onGenerateLOR={handleGenerateLOR}
-            loading={loading}
-          />
-        </TabPanel>
-      </Card>
 
-      <InternFormDialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        onSubmit={handleSubmit}
-        initialValues={editingIntern}
-        loading={loading}
-      />
+        <TabPanel value={currentTab} index={1}>
+          <Typography variant="h6">Admin Settings</Typography>
+          <Typography variant="body1" color="text.secondary">
+            (Coming Soon) Configure system-wide settings and manage user roles.
+          </Typography>
+        </TabPanel>
 
-      <DeleteConfirmationDialog
-        open={openDeleteDialog}
-        onClose={() => {
-          setOpenDeleteDialog(false);
-          setInternToDelete(null);
-        }}
-        onConfirm={handleDeleteConfirm}
-        internName={internToDelete?.name}
-      />
-    </Box>
+        <InternFormDialog
+          open={openDialog}
+          onClose={handleCloseDialog}
+          onSubmit={handleSubmit}
+          initialValues={editingIntern}
+          loading={loading}
+        />
+
+        <DeleteConfirmationDialog
+          open={openDeleteConfirm}
+          onClose={() => setOpenDeleteConfirm(false)}
+          onConfirm={handleDeleteConfirm}
+          internName={internToDelete?.name}
+          loading={loading}
+        />
+      </Container>
+    </PageTransition>
   );
 };
 

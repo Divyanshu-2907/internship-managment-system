@@ -23,6 +23,7 @@ import {
   Alert,
   Chip,
   Avatar,
+  Container,
 } from '@mui/material';
 import {
   Assignment as TaskIcon,
@@ -36,56 +37,77 @@ import {
   Description as DocumentIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 
 import { fetchTasks } from '../store/slices/taskSlice';
 import { fetchInternProfile } from '../store/slices/internSlice';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AnimatedCard from '../components/AnimatedCard';
+import AnimatedButton from '../components/AnimatedButton';
+import AnimatedIcon from '../components/AnimatedIcon';
+import PageTransition from '../components/PageTransition';
 
 // Stat Card Component
-const StatCard = ({ title, value, icon, color, onClick, loading }) => (
-  <Card 
-    sx={{ 
-      height: '100%',
-      cursor: onClick ? 'pointer' : 'default',
-      transition: 'transform 0.2s',
-      '&:hover': onClick ? { transform: 'translateY(-4px)' } : {},
-    }}
-    onClick={onClick}
-  >
+const StatCard = ({ title, value, icon, color, onClick, loading, delay }) => (
+  <AnimatedCard delay={delay} onClick={onClick}>
     <CardContent>
       <Box display="flex" alignItems="center" justifyContent="space-between">
         <Box>
-          <Typography color="textSecondary" gutterBottom>
+          <Typography color="textSecondary" gutterBottom variant="body2" fontWeight={500}>
             {title}
           </Typography>
           {loading ? (
             <CircularProgress size={24} />
           ) : (
-            <Typography variant="h4" component="div">
+            <Typography variant="h3" component="div" fontWeight={700} color="primary.main">
               {value}
             </Typography>
           )}
         </Box>
-        <Avatar sx={{ bgcolor: `${color}.light`, width: 48, height: 48 }}>
-          {icon}
-        </Avatar>
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Avatar 
+            sx={{ 
+              bgcolor: `${color}.light`, 
+              width: 56, 
+              height: 56,
+              background: `linear-gradient(135deg, ${color}.light 0%, ${color}.main 100%)`,
+            }}
+          >
+            <AnimatedIcon delay={delay + 0.1}>
+              {icon}
+            </AnimatedIcon>
+          </Avatar>
+        </motion.div>
       </Box>
     </CardContent>
-  </Card>
+  </AnimatedCard>
 );
 
 // Recent Activity Component
 const RecentActivity = ({ activities, loading }) => (
-  <Card sx={{ height: '100%' }}>
+  <AnimatedCard delay={0.4}>
     <CardHeader 
-      title="Recent Activity" 
+      title={
+        <Typography variant="h6" fontWeight={600}>
+          Recent Activity
+        </Typography>
+      }
       action={
-        <Tooltip title="Refresh">
-          <IconButton onClick={() => window.location.reload()}>
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: 180 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Tooltip title="Refresh">
+            <IconButton onClick={() => window.location.reload()}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </motion.div>
       }
     />
     <Divider />
@@ -101,82 +123,180 @@ const RecentActivity = ({ activities, loading }) => (
       ) : (
         <List>
           {activities.map((activity, index) => (
-            <React.Fragment key={activity.id}>
+            <motion.div
+              key={activity.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
               <ListItem disablePadding>
-                <ListItemButton>
+                <ListItemButton sx={{ borderRadius: 2, mb: 0.5 }}>
                   <ListItemIcon>
-                    {activity.icon}
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {activity.icon}
+                    </motion.div>
                   </ListItemIcon>
                   <ListItemText
                     primary={activity.title}
                     secondary={activity.description}
+                    primaryTypographyProps={{ fontWeight: 500 }}
                   />
                   <Chip 
                     label={activity.status} 
                     size="small"
                     color={activity.status === 'completed' ? 'success' : 'warning'}
+                    sx={{ fontWeight: 600 }}
                   />
                 </ListItemButton>
               </ListItem>
               {index < activities.length - 1 && <Divider />}
-            </React.Fragment>
+            </motion.div>
           ))}
         </List>
       )}
     </CardContent>
-  </Card>
+  </AnimatedCard>
 );
 
 // Quick Actions Component
 const QuickActions = ({ onActionClick }) => (
-  <Card sx={{ height: '100%' }}>
-    <CardHeader title="Quick Actions" />
+  <AnimatedCard delay={0.5}>
+    <CardHeader 
+      title={
+        <Typography variant="h6" fontWeight={600}>
+          Quick Actions
+        </Typography>
+      }
+    />
     <Divider />
     <CardContent>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
-          <Button
+          <AnimatedButton
             fullWidth
             variant="outlined"
             startIcon={<TaskIcon />}
             onClick={() => onActionClick('tasks')}
+            delay={0.6}
+            sx={{
+              height: 48,
+              borderWidth: 2,
+              '&:hover': {
+                borderWidth: 2,
+              }
+            }}
           >
             View Tasks
-          </Button>
+          </AnimatedButton>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Button
+          <AnimatedButton
             fullWidth
             variant="outlined"
             startIcon={<CalendarIcon />}
             onClick={() => onActionClick('timeline')}
+            delay={0.7}
+            sx={{
+              height: 48,
+              borderWidth: 2,
+              '&:hover': {
+                borderWidth: 2,
+              }
+            }}
           >
             View Timeline
-          </Button>
+          </AnimatedButton>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Button
+          <AnimatedButton
             fullWidth
             variant="outlined"
             startIcon={<PaymentIcon />}
             onClick={() => onActionClick('payments')}
+            delay={0.8}
+            sx={{
+              height: 48,
+              borderWidth: 2,
+              '&:hover': {
+                borderWidth: 2,
+              }
+            }}
           >
             Check Payments
-          </Button>
+          </AnimatedButton>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <Button
+          <AnimatedButton
             fullWidth
             variant="outlined"
             startIcon={<DocumentIcon />}
             onClick={() => onActionClick('documents')}
+            delay={0.9}
+            sx={{
+              height: 48,
+              borderWidth: 2,
+              '&:hover': {
+                borderWidth: 2,
+              }
+            }}
           >
             View Documents
-          </Button>
+          </AnimatedButton>
         </Grid>
       </Grid>
     </CardContent>
-  </Card>
+  </AnimatedCard>
+);
+
+// Welcome Section Component
+const WelcomeSection = ({ user }) => (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+  >
+    <Box
+      sx={{
+        background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+        borderRadius: 3,
+        p: 4,
+        mb: 4,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <motion.div
+        animate={{ 
+          scale: [1, 1.1, 1],
+          rotate: [0, 5, -5, 0]
+        }}
+        transition={{ 
+          duration: 4,
+          repeat: Infinity,
+          repeatType: "reverse"
+        }}
+        style={{
+          position: 'absolute',
+          top: -50,
+          right: -50,
+          width: 200,
+          height: 200,
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '50%',
+        }}
+      />
+      <Typography variant="h4" fontWeight={700} gutterBottom>
+        Welcome back, {user?.name || 'Intern'}! 👋
+      </Typography>
+      <Typography variant="body1" sx={{ opacity: 0.9 }}>
+        Here's what's happening with your internship today.
+      </Typography>
+    </Box>
+  </motion.div>
 );
 
 const Dashboard = () => {
@@ -209,62 +329,51 @@ const Dashboard = () => {
     navigate(`/${action}`);
   };
 
-  const loading = tasksLoading || internLoading || refreshing;
+  // Calculate stats
+  const totalTasks = tasks?.length || 0;
+  const completedTasks = tasks?.filter(task => task.status === 'completed').length || 0;
+  const pendingTasks = totalTasks - completedTasks;
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen />;
-  }
-
-  const completedTasks = tasks.filter(task => task.status === 'completed').length;
-  const pendingTasks = tasks.filter(task => task.status === 'pending').length;
-  const totalTasks = tasks.length;
-  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
+  // Mock recent activities
   const recentActivities = [
-    ...tasks.slice(0, 5).map(task => ({
-      id: task.id,
-      title: task.title,
-      description: `Due: ${new Date(task.dueDate).toLocaleDateString()}`,
-      status: task.status,
-      icon: task.status === 'completed' ? <CompletedIcon /> : <PendingIcon />,
-    })),
+    {
+      id: 1,
+      title: 'Task Completed',
+      description: 'Frontend development task finished',
+      status: 'completed',
+      icon: <CompletedIcon color="success" />,
+    },
+    {
+      id: 2,
+      title: 'Payment Received',
+      description: 'Monthly stipend processed',
+      status: 'completed',
+      icon: <PaymentIcon color="success" />,
+    },
+    {
+      id: 3,
+      title: 'Document Upload',
+      description: 'Progress report submitted',
+      status: 'pending',
+      icon: <DocumentIcon color="warning" />,
+    },
   ];
 
+  if (tasksLoading || internLoading) {
+    return <LoadingSpinner />;
+  }
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <PageTransition>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Welcome back, {user?.name || 'Intern'}!
-          </Typography>
-          <Typography color="textSecondary">
-            Here's an overview of your internship progress
-          </Typography>
-        </Box>
-        <Tooltip title="Refresh Dashboard">
-          <IconButton onClick={() => window.location.reload()} disabled={refreshing}>
-            {refreshing ? <CircularProgress size={24} /> : <RefreshIcon />}
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      {!currentIntern && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Please complete your profile to access all features.
-          <Button 
-            color="inherit" 
-            size="small" 
-            sx={{ ml: 2 }}
-            onClick={() => navigate('/profile')}
-          >
-            Complete Profile
-          </Button>
-        </Alert>
-      )}
-
-      <Grid container spacing={3}>
-        {/* Stats Section */}
-        <Grid item xs={12} md={8}>
+          <WelcomeSection user={user} />
+          
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
@@ -272,8 +381,8 @@ const Dashboard = () => {
                 value={totalTasks}
                 icon={<TaskIcon />}
                 color="primary"
-                onClick={() => handleActionClick('tasks')}
-                loading={loading}
+                loading={tasksLoading}
+                delay={0.1}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -282,7 +391,8 @@ const Dashboard = () => {
                 value={completedTasks}
                 icon={<CompletedIcon />}
                 color="success"
-                loading={loading}
+                loading={tasksLoading}
+                delay={0.2}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -291,54 +401,35 @@ const Dashboard = () => {
                 value={pendingTasks}
                 icon={<PendingIcon />}
                 color="warning"
-                loading={loading}
+                loading={tasksLoading}
+                delay={0.3}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
                 title="Completion Rate"
-                value={`${Math.round(completionRate)}%`}
+                value={`${completionRate}%`}
                 icon={<TimelineIcon />}
                 color="info"
-                loading={loading}
+                loading={tasksLoading}
+                delay={0.4}
               />
             </Grid>
           </Grid>
 
-          {/* Progress Section */}
-          <Card sx={{ mt: 3 }}>
-            <CardHeader title="Overall Progress" />
-            <CardContent>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="textSecondary" gutterBottom>
-                  Task Completion
-                </Typography>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={completionRate} 
-                  sx={{ height: 10, borderRadius: 5 }}
-                />
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                  {completedTasks} of {totalTasks} tasks completed
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Quick Actions and Recent Activity */}
-        <Grid item xs={12} md={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <QuickActions onActionClick={handleActionClick} />
+          <Box mt={4}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} lg={8}>
+                <RecentActivity activities={recentActivities} loading={false} />
+              </Grid>
+              <Grid item xs={12} lg={4}>
+                <QuickActions onActionClick={handleActionClick} />
+              </Grid>
             </Grid>
-            <Grid item xs={12}>
-              <RecentActivity activities={recentActivities} loading={loading} />
-            </Grid>
-          </Grid>
-        </Grid>
-      </Grid>
-    </Box>
+          </Box>
+        </Box>
+      </motion.div>
+    </PageTransition>
   );
 };
 

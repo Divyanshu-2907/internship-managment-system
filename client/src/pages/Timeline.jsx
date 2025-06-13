@@ -25,6 +25,10 @@ import {
   CircularProgress,
   Paper,
   Avatar,
+  Container,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -41,17 +45,23 @@ import {
   FilterList as FilterIcon,
   CheckCircle as CheckCircleIcon,
   Pending as PendingIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { format, differenceInDays, isAfter, isBefore, isToday } from 'date-fns';
+import { motion } from 'framer-motion';
 
 import { fetchTimeline, addMilestone, updateMilestone, deleteMilestone } from '../store/slices/timelineSlice';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AnimatedCard from '../components/AnimatedCard';
+import AnimatedButton from '../components/AnimatedButton';
+import AnimatedIcon from '../components/AnimatedIcon';
+import PageTransition from '../components/PageTransition';
 
 // Progress Card Component
-const ProgressCard = ({ startDate, endDate, completedMilestones, totalMilestones }) => {
+const ProgressCard = ({ startDate, endDate, completedMilestones, totalMilestones, delay }) => {
   const today = new Date();
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -62,9 +72,9 @@ const ProgressCard = ({ startDate, endDate, completedMilestones, totalMilestones
   const milestoneProgress = (completedMilestones / totalMilestones) * 100;
 
   return (
-    <Card>
+    <AnimatedCard delay={delay}>
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        <Typography variant="h6" gutterBottom fontWeight={600}>
           Internship Progress
         </Typography>
         <Grid container spacing={3}>
@@ -100,12 +110,12 @@ const ProgressCard = ({ startDate, endDate, completedMilestones, totalMilestones
           </Grid>
         </Grid>
       </CardContent>
-    </Card>
+    </AnimatedCard>
   );
 };
 
 // Timeline Item Component
-const TimelineItem = ({ milestone, onEdit, onDelete, onStatusChange }) => {
+const TimelineItem = ({ milestone, onEdit, onDelete, onStatusChange, delay }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const isUpcoming = isAfter(new Date(milestone.date), new Date());
   const isPast = isBefore(new Date(milestone.date), new Date());
@@ -169,253 +179,247 @@ const TimelineItem = ({ milestone, onEdit, onDelete, onStatusChange }) => {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        mb: 4,
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          left: 24,
-          top: 40,
-          bottom: -32,
-          width: 2,
-          bgcolor: 'divider',
-          zIndex: 0,
-        },
-        '&:last-child::before': {
-          display: 'none',
-        },
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay }}
     >
       <Box
         sx={{
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          mr: 2,
-          zIndex: 1,
-        }}
-      >
-        <Avatar
-          sx={{
-            bgcolor: `${getStatusColor(milestone.status)}.main`,
-            width: 48,
-            height: 48,
-            mb: 1,
-          }}
-        >
-          {getIcon(milestone.type)}
-        </Avatar>
-        <Typography variant="caption" color="textSecondary">
-          {format(new Date(milestone.date), 'MMM d, yyyy')}
-        </Typography>
-      </Box>
-
-      <Paper
-        elevation={1}
-        sx={{
-          flex: 1,
-          p: 2,
+          alignItems: 'flex-start',
+          mb: 4,
           position: 'relative',
-          bgcolor: isCurrent ? 'action.hover' : 'background.paper',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            left: 24,
+            top: 40,
+            bottom: -32,
+            width: 2,
+            bgcolor: 'divider',
+            zIndex: 0,
+          },
+          '&:last-child::before': {
+            display: 'none',
+          },
         }}
       >
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              {milestone.title}
-            </Typography>
-            <Typography variant="body2" color="textSecondary" paragraph>
-              {milestone.description}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip
-                size="small"
-                label={milestone.type}
-                icon={getIcon(milestone.type)}
-              />
-              <Chip
-                size="small"
-                label={milestone.status}
-                color={getStatusColor(milestone.status)}
-              />
-            </Box>
-          </Box>
-          <IconButton size="small" onClick={handleMenuClick}>
-            <MoreVertIcon />
-          </IconButton>
-        </Box>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-          PaperProps={{
-            style: {
-              maxHeight: 48 * 4.5,
-              width: '20ch',
-            },
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            mr: 2,
+            zIndex: 1,
           }}
         >
-          <MenuItem onClick={() => handleAction('edit')}>
-            <ListItemIcon>
-              <EditIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Edit</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleAction('delete')}>
-            <ListItemIcon>
-              <DeleteIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Delete</ListItemText>
-          </MenuItem>
-          <Divider />
-          <MenuItem onClick={() => handleAction('complete')} disabled={milestone.status === 'completed'}>
-            <ListItemIcon>
-              <CheckCircleIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Mark as Completed</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleAction('in-progress')} disabled={milestone.status === 'in-progress'}>
-            <ListItemIcon>
-              <PendingIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Mark as In-Progress</ListItemText>
-          </MenuItem>
-        </Menu>
-      </Paper>
-    </Box>
+          <Avatar
+            sx={{
+              bgcolor: `${getStatusColor(milestone.status)}.main`,
+              width: 48,
+              height: 48,
+              mb: 1,
+            }}
+          >
+            <AnimatedIcon>
+              {getIcon(milestone.type)}
+            </AnimatedIcon>
+          </Avatar>
+          <Typography variant="caption" color="textSecondary">
+            {format(new Date(milestone.date), 'MMM d, yyyy')}
+          </Typography>
+        </Box>
+
+        <Paper
+          elevation={1}
+          sx={{
+            flex: 1,
+            p: 2,
+            position: 'relative',
+            bgcolor: isCurrent ? 'action.hover' : 'background.paper',
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+            <Box>
+              <Typography variant="h6" gutterBottom fontWeight={600}>
+                {milestone.title}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                {milestone.description}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  size="small"
+                  label={milestone.type}
+                  icon={getIcon(milestone.type)}
+                  sx={{ fontWeight: 600 }}
+                />
+                <Chip
+                  size="small"
+                  label={milestone.status}
+                  color={getStatusColor(milestone.status)}
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+            </Box>
+            <IconButton size="small" onClick={handleMenuClick}>
+              <MoreVertIcon />
+            </IconButton>
+          </Box>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem onClick={() => handleAction('edit')}>
+              <ListItemIcon>
+                <EditIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Edit</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => handleAction('delete')}>
+              <ListItemIcon>
+                <DeleteIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Delete</ListItemText>
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={() => handleAction('complete')}>
+              <ListItemIcon>
+                <CheckCircleIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Mark as Completed</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => handleAction('in-progress')}>
+              <ListItemIcon>
+                <PendingIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Mark In Progress</ListItemText>
+            </MenuItem>
+          </Menu>
+        </Paper>
+      </Box>
+    </motion.div>
   );
 };
 
-// Milestone Dialog Component
+// Milestone Dialog Component (Add/Edit Form)
 const MilestoneDialog = ({ open, onClose, milestone, onSubmit, loading }) => {
-  const validationSchema = Yup.object({
+  const initialValues = {
+    title: milestone?.title || '',
+    description: milestone?.description || '',
+    date: milestone?.date ? format(new Date(milestone.date), 'yyyy-MM-dd') : '',
+    type: milestone?.type || 'work',
+    status: milestone?.status || 'upcoming',
+  };
+
+  const validationSchema = Yup.object().shape({
     title: Yup.string().required('Title is required'),
     description: Yup.string().required('Description is required'),
-    date: Yup.date().nullable().required('Date is required'),
+    date: Yup.string().required('Date is required'),
     type: Yup.string().required('Type is required'),
     status: Yup.string().required('Status is required'),
   });
 
   const formik = useFormik({
-    initialValues: {
-      title: milestone?.title || '',
-      description: milestone?.description || '',
-      date: milestone?.date ? format(new Date(milestone.date), 'yyyy-MM-dd') : '',
-      type: milestone?.type || 'work',
-      status: milestone?.status || 'upcoming',
-    },
-    validationSchema,
-    enableReinitialize: true,
+    initialValues: initialValues,
+    validationSchema: validationSchema,
     onSubmit: (values) => {
-      onSubmit({
-        ...values,
-        date: new Date(values.date).toISOString(),
-      });
+      onSubmit(values);
     },
+    enableReinitialize: true,
   });
 
-  useEffect(() => {
-    if (!open) {
-      formik.resetForm();
-    }
-  }, [open, formik]);
-
-  const milestoneTypes = ['work', 'education', 'task', 'achievement'];
-  const milestoneStatuses = ['upcoming', 'in-progress', 'completed'];
-
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{milestone ? 'Edit Milestone' : 'Add New Milestone'}</DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
+      PaperProps={{
+        component: motion.div,
+        initial: { opacity: 0, scale: 0.9, y: 50 },
+        animate: { opacity: 1, scale: 1, y: 0 },
+        transition: { duration: 0.3 },
+      }}
+    >
+      <DialogTitle>
+        <Typography variant="h6" fontWeight={600}>{milestone ? 'Edit Milestone' : 'Add Milestone'}</Typography>
+      </DialogTitle>
       <form onSubmit={formik.handleSubmit}>
         <DialogContent dividers>
-          <TextField
-            fullWidth
-            id="title"
-            name="title"
-            label="Title"
-            value={formik.values.title}
-            onChange={formik.handleChange}
-            error={formik.touched.title && Boolean(formik.errors.title)}
-            helperText={formik.touched.title && formik.errors.title}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            id="description"
-            name="description"
-            label="Description"
-            multiline
-            rows={4}
-            value={formik.values.description}
-            onChange={formik.handleChange}
-            error={formik.touched.description && Boolean(formik.errors.description)}
-            helperText={formik.touched.description && formik.errors.description}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            id="date"
-            name="date"
-            label="Date"
-            type="date"
-            value={formik.values.date}
-            onChange={formik.handleChange}
-            error={formik.touched.date && Boolean(formik.errors.date)}
-            helperText={formik.touched.date && formik.errors.date}
-            margin="normal"
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <TextField
-            fullWidth
-            id="type"
-            name="type"
-            select
-            label="Type"
-            value={formik.values.type}
-            onChange={formik.handleChange}
-            error={formik.touched.type && Boolean(formik.errors.type)}
-            helperText={formik.touched.type && formik.errors.type}
-            margin="normal"
-          >
-            {milestoneTypes.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option.charAt(0).toUpperCase() + option.slice(1)}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            fullWidth
-            id="status"
-            name="status"
-            select
-            label="Status"
-            value={formik.values.status}
-            onChange={formik.handleChange}
-            error={formik.touched.status && Boolean(formik.errors.status)}
-            helperText={formik.touched.status && formik.errors.status}
-            margin="normal"
-          >
-            {milestoneStatuses.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option.charAt(0).toUpperCase() + option.slice(1)}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Title"
+                {...formik.getFieldProps('title')}
+                error={formik.touched.title && Boolean(formik.errors.title)}
+                helperText={formik.touched.title && formik.errors.title}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                multiline
+                rows={3}
+                {...formik.getFieldProps('description')}
+                error={formik.touched.description && Boolean(formik.errors.description)}
+                helperText={formik.touched.description && formik.errors.description}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Date"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                {...formik.getFieldProps('date')}
+                error={formik.touched.date && Boolean(formik.errors.date)}
+                helperText={formik.touched.date && formik.errors.date}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth error={formik.touched.type && Boolean(formik.errors.type)}>
+                <InputLabel>Type</InputLabel>
+                <Select
+                  label="Type"
+                  {...formik.getFieldProps('type')}
+                >
+                  <MenuItem value="work">Work</MenuItem>
+                  <MenuItem value="education">Education</MenuItem>
+                  <MenuItem value="task">Task</MenuItem>
+                  <MenuItem value="achievement">Achievement</MenuItem>
+                </Select>
+                {formik.touched.type && formik.errors.type && (
+                  <Typography variant="caption" color="error">{formik.errors.type}</Typography>
+                )}
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth error={formik.touched.status && Boolean(formik.errors.status)}>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  label="Status"
+                  {...formik.getFieldProps('status')}
+                >
+                  <MenuItem value="upcoming">Upcoming</MenuItem>
+                  <MenuItem value="in-progress">In Progress</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                </Select>
+                {formik.touched.status && formik.errors.status && (
+                  <Typography variant="caption" color="error">{formik.errors.status}</Typography>
+                )}
+              </FormControl>
+            </Grid>
+          </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} disabled={loading}>
-            <CancelIcon sx={{ mr: 1 }} /> Cancel
-          </Button>
-          <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : <SaveIcon sx={{ mr: 1 }} />}
-            {milestone ? 'Save Changes' : 'Add Milestone'}
-          </Button>
+          <AnimatedButton onClick={onClose}>Cancel</AnimatedButton>
+          <AnimatedButton type="submit" variant="contained" disabled={loading}>
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Save'}
+          </AnimatedButton>
         </DialogActions>
       </form>
     </Dialog>
@@ -424,144 +428,205 @@ const MilestoneDialog = ({ open, onClose, milestone, onSubmit, loading }) => {
 
 const TimelineComponent = () => {
   const dispatch = useDispatch();
-  const { milestones, loading, error } = useSelector(state => state.timeline);
-  const [isMilestoneDialogOpen, setIsMilestoneDialogOpen] = useState(false);
-  const [currentMilestone, setCurrentMilestone] = useState(null);
-
-  // Default values for internship start and end dates (can be replaced with actual user data)
-  const [internshipDates, setInternshipDates] = useState({
-    startDate: new Date(2023, 0, 1).toISOString(), // January 1, 2023
-    endDate: new Date(2023, 11, 31).toISOString(), // December 31, 2023
-  });
+  const { milestones, loading, error } = useSelector((state) => state.timeline);
+  const { currentIntern } = useSelector((state) => state.intern);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingMilestone, setEditingMilestone] = useState(null);
+  const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchTimeline());
-  }, [dispatch]);
+    fetchTimelineData();
+  }, [filterType, filterStatus]);
 
-  // Log state for debugging
-  useEffect(() => {
-    console.log('Timeline Milestones:', milestones);
-    console.log('Timeline Loading:', loading);
-    console.log('Timeline Error:', error);
-    if (error) {
-      toast.error(`Timeline Error: ${error}`);
+  const fetchTimelineData = async () => {
+    try {
+      setRefreshing(true);
+      await dispatch(fetchTimeline({ type: filterType, status: filterStatus })).unwrap();
+    } catch (err) {
+      toast.error(err.message || 'Failed to fetch timeline data');
+    } finally {
+      setRefreshing(false);
     }
-  }, [milestones, loading, error]);
+  };
 
   const handleAddClick = () => {
-    setCurrentMilestone(null);
-    setIsMilestoneDialogOpen(true);
+    setEditingMilestone(null);
+    setOpenDialog(true);
   };
 
   const handleEditClick = (milestone) => {
-    setCurrentMilestone(milestone);
-    setIsMilestoneDialogOpen(true);
+    setEditingMilestone(milestone);
+    setOpenDialog(true);
   };
 
   const handleDeleteClick = async (milestone) => {
-    if (window.confirm(`Are you sure you want to delete "${milestone.title}"?`)) {
-      try {
-        await dispatch(deleteMilestone(milestone.id)).unwrap();
-        toast.success('Milestone deleted successfully!');
-      } catch (err) {
-        toast.error(`Failed to delete milestone: ${err}`);
-      }
+    try {
+      await dispatch(deleteMilestone(milestone.id)).unwrap();
+      toast.success('Milestone deleted successfully');
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete milestone');
     }
   };
 
   const handleStatusChange = async (milestone, newStatus) => {
     try {
-      await dispatch(updateMilestone({ id: milestone.id, milestone: { ...milestone, status: newStatus } })).unwrap();
-      toast.success(`Milestone marked as ${newStatus} successfully!`);
+      await dispatch(updateMilestone({ ...milestone, status: newStatus })).unwrap();
+      toast.success('Milestone status updated successfully');
     } catch (err) {
-      toast.error(`Failed to update milestone status: ${err}`);
+      toast.error(err.message || 'Failed to update milestone status');
     }
   };
 
   const handleSubmit = async (values) => {
     try {
-      if (currentMilestone) {
-        await dispatch(updateMilestone({ id: currentMilestone.id, milestone: values })).unwrap();
-        toast.success('Milestone updated successfully!');
+      if (editingMilestone) {
+        await dispatch(updateMilestone({ ...editingMilestone, ...values })).unwrap();
+        toast.success('Milestone updated successfully');
       } else {
         await dispatch(addMilestone(values)).unwrap();
-        toast.success('Milestone added successfully!');
+        toast.success('Milestone added successfully');
       }
-      setIsMilestoneDialogOpen(false);
+      setOpenDialog(false);
     } catch (err) {
-      toast.error(`Failed to save milestone: ${err}`);
+      toast.error(err.message || 'Failed to save milestone');
     }
   };
 
+  const sortedMilestones = [...milestones].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Calculate overall internship start and end dates for Progress Card
+  const internshipStartDate = currentIntern?.startDate || '2023-01-01'; // Default or actual start date
+  const internshipEndDate = currentIntern?.endDate || '2024-12-31'; // Default or actual end date
+
   const completedMilestonesCount = milestones.filter(m => m.status === 'completed').length;
 
-  if (loading && milestones.length === 0) {
-    return <LoadingSpinner fullScreen />;
+  if (loading && !refreshing) {
+    return <LoadingSpinner message="Loading timeline..." />;
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12}>
-          <ProgressCard
-            startDate={internshipDates.startDate}
-            endDate={internshipDates.endDate}
-            completedMilestones={completedMilestonesCount}
-            totalMilestones={milestones.length}
-          />
-        </Grid>
-      </Grid>
+    <PageTransition>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
+            Internship Timeline
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Track your key milestones and progress throughout your internship
+          </Typography>
+        </Box>
+      </motion.div>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" component="h2">
-          Internship Timeline
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddClick}
-        >
-          Add Milestone
-        </Button>
+      {/* Progress Card */}
+      <Box sx={{ mb: 4 }}>
+        <ProgressCard
+          startDate={internshipStartDate}
+          endDate={internshipEndDate}
+          completedMilestones={completedMilestonesCount}
+          totalMilestones={milestones.length}
+          delay={0.1}
+        />
       </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+      {/* Action Bar and Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 3,
+          flexWrap: 'wrap',
+          gap: 2
+        }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <AnimatedButton
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddClick}
+              delay={0.6}
+            >
+              Add Milestone
+            </AnimatedButton>
 
-      {milestones.length === 0 && !loading && !error ? (
-        <Paper elevation={1} sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="h6" color="textSecondary" gutterBottom>
-            No milestones found.
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Start by adding your first internship milestone!
-          </Typography>
-        </Paper>
-      ) : (
-        <Box>
-          {milestones.map((milestone) => (
-            <TimelineItem
-              key={milestone.id}
-              milestone={milestone}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteClick}
-              onStatusChange={handleStatusChange}
-            />
-          ))}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Tooltip title="Refresh">
+                <IconButton onClick={fetchTimelineData} disabled={refreshing}>
+                  {refreshing ? <CircularProgress size={20} /> : <RefreshIcon />}
+                </IconButton>
+              </Tooltip>
+            </motion.div>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={filterType}
+                label="Type"
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="work">Work</MenuItem>
+                <MenuItem value="education">Education</MenuItem>
+                <MenuItem value="task">Task</MenuItem>
+                <MenuItem value="achievement">Achievement</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={filterStatus}
+                label="Status"
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="upcoming">Upcoming</MenuItem>
+                <MenuItem value="in-progress">In Progress</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
         </Box>
-      )}
+      </motion.div>
+
+      {/* Timeline Items */}
+      <Box>
+        {sortedMilestones.length === 0 && !loading && (
+          <Alert severity="info">No milestones found matching your criteria.</Alert>
+        )}
+        {sortedMilestones.map((milestone, index) => (
+          <TimelineItem
+            key={milestone.id}
+            milestone={milestone}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            onStatusChange={handleStatusChange}
+            delay={0.1 + index * 0.1}
+          />
+        ))}
+      </Box>
 
       <MilestoneDialog
-        open={isMilestoneDialogOpen}
-        onClose={() => setIsMilestoneDialogOpen(false)}
-        milestone={currentMilestone}
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        milestone={editingMilestone}
         onSubmit={handleSubmit}
         loading={loading}
       />
-    </Box>
+    </PageTransition>
   );
 };
 

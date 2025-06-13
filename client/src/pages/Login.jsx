@@ -46,6 +46,9 @@ import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 
 import { loginStart, loginSuccess, loginFailure } from '../store/slices/authSlice';
+import AnimatedButton from '../components/AnimatedButton';
+import AnimatedIcon from '../components/AnimatedIcon';
+import PageTransition from '../components/PageTransition';
 
 // Validation schema
 const validationSchema = yup.object({
@@ -64,37 +67,39 @@ const validationSchema = yup.object({
 });
 
 // Styled components
-const StyledContainer = styled(Box)(({ theme }) => ({
+const MainContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
   display: 'flex',
-  justifyContent: 'center',
   alignItems: 'center',
+  justifyContent: 'center',
   padding: theme.spacing(2),
-  maxWidth: theme.breakpoints.values.lg,
-  margin: 'auto',
+  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
 }));
 
-const SplitContainer = styled(Box)(({ theme }) => ({
+const SplitContainer = styled(Paper)(({ theme }) => ({
   display: 'flex',
-  minHeight: '80vh',
-  borderRadius: theme.shape.borderRadius * 2,
+  minHeight: '600px',
+  maxWidth: '1000px',
+  width: '100%',
+  borderRadius: theme.spacing(2),
   overflow: 'hidden',
-  boxShadow: theme.shadows[24],
+  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
   backgroundColor: theme.palette.background.paper,
   [theme.breakpoints.down('md')]: {
     flexDirection: 'column',
     minHeight: 'auto',
+    maxWidth: '500px',
   },
-  mx: 'auto',
 }));
 
 const LeftPanel = styled(Box)(({ theme }) => ({
-  flex: 1,
+  flex: 1.2,
   background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-  padding: theme.spacing(6),
+  padding: theme.spacing(4),
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
+  alignItems: 'center',
   color: theme.palette.common.white,
   position: 'relative',
   overflow: 'hidden',
@@ -106,23 +111,24 @@ const LeftPanel = styled(Box)(({ theme }) => ({
     right: 0,
     bottom: 0,
     background: 'url("/pattern.svg")',
-    opacity: 0.1,
+    opacity: 0.05,
   },
   [theme.breakpoints.down('md')]: {
-    padding: theme.spacing(4),
-    minHeight: '300px',
+    padding: theme.spacing(3),
+    minHeight: '200px',
+    flex: 'none',
   },
 }));
 
 const RightPanel = styled(Box)(({ theme }) => ({
   flex: 1,
-  padding: theme.spacing(6),
+  padding: theme.spacing(4),
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
   backgroundColor: theme.palette.background.paper,
   [theme.breakpoints.down('md')]: {
-    padding: theme.spacing(4),
+    padding: theme.spacing(3),
   },
 }));
 
@@ -133,40 +139,55 @@ const StyledLockIcon = styled(motion.div)(({ theme }) => ({
   '& svg': {
     fontSize: 48,
     color: theme.palette.common.white,
+    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
   },
 }));
 
-const SocialButton = styled(Button)(({ theme, provider }) => ({
-  width: '100%',
-  marginBottom: theme.spacing(1.5),
-  textTransform: 'none',
-  padding: theme.spacing(1.5),
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: provider === 'google' 
-    ? '#DB4437' 
-    : provider === 'github' 
-    ? '#333' 
-    : '#0077B5',
-  color: theme.palette.common.white,
-  '&:hover': {
-    backgroundColor: provider === 'google' 
-      ? alpha('#DB4437', 0.9) 
-      : provider === 'github' 
-      ? alpha('#333', 0.9) 
-      : alpha('#0077B5', 0.9),
-    transform: 'translateY(-2px)',
-    transition: 'all 0.2s',
-  },
-}));
+const SocialButton = styled(Button)(({ theme, provider }) => {
+  const colors = {
+    google: '#DB4437',
+    github: '#333333',
+    linkedin: '#0077B5',
+  };
+  
+  return {
+    width: '100%',
+    marginBottom: theme.spacing(1.5),
+    textTransform: 'none',
+    padding: theme.spacing(1.5),
+    borderRadius: theme.spacing(1),
+    backgroundColor: colors[provider] || theme.palette.primary.main,
+    color: theme.palette.common.white,
+    fontWeight: 500,
+    fontSize: '0.95rem',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      backgroundColor: alpha(colors[provider] || theme.palette.primary.main, 0.9),
+      transform: 'translateY(-2px)',
+      boxShadow: `0 4px 12px ${alpha(colors[provider] || theme.palette.primary.main, 0.4)}`,
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
+  };
+});
 
 const FeatureCard = styled(Card)(({ theme }) => ({
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  borderRadius: theme.spacing(1.5),
+  transition: 'all 0.3s ease',
   height: '100%',
-  transition: 'transform 0.2s',
   '&:hover': {
     transform: 'translateY(-4px)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   '& .MuiCardContent-root': {
     padding: theme.spacing(2),
+    '&:last-child': {
+      paddingBottom: theme.spacing(2),
+    },
   },
 }));
 
@@ -176,6 +197,7 @@ const PasswordRequirement = styled(Typography)(({ theme, met }) => ({
   color: met ? theme.palette.success.main : theme.palette.text.secondary,
   fontSize: '0.875rem',
   marginBottom: theme.spacing(0.5),
+  transition: 'color 0.3s ease',
   '&::before': {
     content: '""',
     display: 'inline-block',
@@ -184,7 +206,34 @@ const PasswordRequirement = styled(Typography)(({ theme, met }) => ({
     borderRadius: '50%',
     backgroundColor: met ? theme.palette.success.main : theme.palette.text.secondary,
     marginRight: theme.spacing(1),
+    transition: 'background-color 0.3s ease',
   },
+}));
+
+const FloatingShape = styled(motion.div)(({ theme }) => ({
+  position: 'absolute',
+  borderRadius: '50%',
+  background: 'rgba(255, 255, 255, 0.1)',
+  backdropFilter: 'blur(10px)',
+}));
+
+const FormContainer = styled(Box)(({ theme }) => ({
+  maxWidth: '400px',
+  width: '100%',
+  margin: '0 auto',
+}));
+
+const WelcomeSection = styled(Box)(({ theme }) => ({
+  textAlign: 'center',
+  marginBottom: theme.spacing(4),
+  position: 'relative',
+  zIndex: 1,
+}));
+
+const FeaturesSection = styled(Box)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  position: 'relative',
+  zIndex: 1,
 }));
 
 const Login = () => {
@@ -330,224 +379,341 @@ const Login = () => {
   ];
 
   return (
-    <StyledContainer maxWidth="lg">
-      <SplitContainer>
-        <LeftPanel>
-          <StyledLockIcon
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 10 }}
-          >
-            <LockIcon />
-          </StyledLockIcon>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Typography variant="h3" gutterBottom fontWeight="bold">
-              Welcome Back!
-            </Typography>
-            <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
-              Sign in to continue your internship journey
-            </Typography>
-          </motion.div>
-          <Grid container spacing={3} sx={{ mt: 'auto' }}>
-            {features.map((feature, index) => (
-              <Grid item xs={12} md={4} key={index}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                >
-                  <FeatureCard>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <feature.icon sx={{ mr: 1, color: 'primary.main' }} />
-                        <Typography variant="h6">{feature.title}</Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {feature.description}
-                      </Typography>
-                    </CardContent>
-                  </FeatureCard>
-                </motion.div>
+    <PageTransition>
+      <MainContainer>
+        <SplitContainer
+          component={motion.div}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, type: 'spring', stiffness: 100 }}
+        >
+          <LeftPanel>
+            {/* Floating shapes for visual appeal */}
+            <FloatingShape
+              animate={{ 
+                x: [0, 30, 0],
+                y: [0, -20, 0],
+                rotate: [0, 180, 360]
+              }}
+              transition={{ 
+                duration: 8,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              style={{
+                width: 120,
+                height: 120,
+                top: '10%',
+                left: '10%',
+                opacity: 0.6,
+              }}
+            />
+            <FloatingShape
+              animate={{ 
+                x: [0, -20, 0],
+                y: [0, 30, 0],
+                rotate: [0, -180, -360]
+              }}
+              transition={{ 
+                duration: 10,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              style={{
+                width: 80,
+                height: 80,
+                top: '60%',
+                right: '15%',
+                opacity: 0.4,
+              }}
+            />
+
+            <WelcomeSection>
+              <StyledLockIcon
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
+              >
+                <AnimatedIcon size="large">
+                  <LockIcon />
+                </AnimatedIcon>
+              </StyledLockIcon>
+
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+              >
+                <Typography variant="h4" gutterBottom fontWeight="bold" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                  Welcome Back!
+                </Typography>
+                <Typography variant="h6" sx={{ mb: 2, opacity: 0.9, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
+                  Sign in to continue your internship journey
+                </Typography>
+              </motion.div>
+            </WelcomeSection>
+
+            <FeaturesSection>
+              <Grid container spacing={2}>
+                {features.map((feature, index) => (
+                  <Grid item xs={12} key={index}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 + index * 0.1, duration: 0.5 }}
+                      whileHover={{ y: -2 }}
+                    >
+                      <FeatureCard>
+                        <CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <AnimatedIcon delay={0.1}>
+                              <feature.icon sx={{ mr: 2, fontSize: '1.5rem', color: 'inherit' }} />
+                            </AnimatedIcon>
+                            <Typography variant="h6" sx={{ color: 'inherit', fontWeight: 600 }}>
+                              {feature.title}
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                            {feature.description}
+                          </Typography>
+                        </CardContent>
+                      </FeatureCard>
+                    </motion.div>
+                  </Grid>
+                ))}
               </Grid>
-            ))}
-          </Grid>
-        </LeftPanel>
+            </FeaturesSection>
+          </LeftPanel>
 
-        <RightPanel>
-          <Box sx={{ maxWidth: 400, width: '100%', mx: 'auto' }}>
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
-                Sign In
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                Enter your credentials to access your account
-              </Typography>
-
-              <form onSubmit={formik.handleSubmit}>
-                <TextField
-                  fullWidth
-                  id="email"
-                  name="email"
-                  label="Email Address"
-                  value={formik.values.email}
-                  onChange={formik.handleChange}
-                  error={formik.touched.email && Boolean(formik.errors.email)}
-                  helperText={formik.touched.email && formik.errors.email}
-                  margin="normal"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <EmailIcon color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  id="password"
-                  name="password"
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formik.values.password}
-                  onChange={formik.handleChange}
-                  error={formik.touched.password && Boolean(formik.errors.password)}
-                  helperText={formik.touched.password && formik.errors.password}
-                  margin="normal"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon color="action" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
-                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                {formik.values.password && (
-                  <Box sx={{ mt: 2, mb: 2 }}>
-                    {passwordRequirements.map((req, index) => (
-                      <PasswordRequirement key={index} met={req.met}>
-                        {req.label}
-                      </PasswordRequirement>
-                    ))}
-                  </Box>
-                )}
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        color="primary"
-                      />
-                    }
-                    label="Remember me"
-                  />
-                  <Link component={RouterLink} to="/forgot-password" color="primary">
-                    Forgot password?
-                  </Link>
+          <RightPanel>
+            <FormContainer>
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+              >
+                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                  <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
+                    Sign In
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Enter your credentials to access your account
+                  </Typography>
                 </Box>
 
-                {error && (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                  </Alert>
-                )}
+                <form onSubmit={formik.handleSubmit}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <TextField
+                      fullWidth
+                      id="email"
+                      name="email"
+                      label="Email Address"
+                      value={formik.values.email}
+                      onChange={formik.handleChange}
+                      error={formik.touched.email && Boolean(formik.errors.email)}
+                      helperText={formik.touched.email && formik.errors.email}
+                      margin="normal"
+                      size="large"
+                      sx={
+                        {
+                          mb: 2,
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&:hover fieldset': {
+                              borderColor: 'primary.main',
+                            },
+                          },
+                        }
+                      }
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <AnimatedIcon>
+                              <EmailIcon color="action" />
+                            </AnimatedIcon>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </motion.div>
 
-                <Button
-                  fullWidth
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  disabled={loading || isLocked}
-                  sx={{
-                    py: 1.5,
-                    mb: 2,
-                    position: 'relative',
-                    '&:disabled': {
-                      backgroundColor: theme.palette.primary.main,
-                      opacity: 0.7,
-                    },
-                  }}
-                >
-                  {loading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : isLocked ? (
-                    `Try again in ${lockoutTime}s`
-                  ) : (
-                    'Sign In'
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    <TextField
+                      fullWidth
+                      id="password"
+                      name="password"
+                      label="Password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formik.values.password}
+                      onChange={formik.handleChange}
+                      error={formik.touched.password && Boolean(formik.errors.password)}
+                      helperText={formik.touched.password && formik.errors.password}
+                      margin="normal"
+                      size="large"
+                      sx={
+                        {
+                          mb: 2,
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&:hover fieldset': {
+                              borderColor: 'primary.main',
+                            },
+                          },
+                        }
+                      }
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <AnimatedIcon>
+                              <LockIcon color="action" />
+                            </AnimatedIcon>
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                            >
+                              {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </motion.div>
+
+                  {/* Password requirements */}
+                  {formik.values.password && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Box sx={{ mt: 1, mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom fontWeight={600} color="text.primary">
+                          Password Requirements:
+                        </Typography>
+                        {passwordRequirements.map((req, index) => (
+                          <PasswordRequirement key={index} met={req.met}>
+                            {req.label}
+                          </PasswordRequirement>
+                        ))}
+                      </Box>
+                    </motion.div>
                   )}
-                </Button>
 
-                <Divider sx={{ my: 3 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Or continue with
-                  </Typography>
-                </Divider>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          name="rememberMe"
+                          color="primary"
+                        />
+                      }
+                      label="Remember me"
+                    />
+                    <Link component={RouterLink} to="/forgot-password" variant="body2" color="primary">
+                      Forgot password?
+                    </Link>
+                  </Box>
 
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
+                  {error && (
+                    <Fade in={!!error}>
+                      <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                        {error}
+                      </Alert>
+                    </Fade>
+                  )}
+
+                  <AnimatedButton
+                    fullWidth
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    disabled={loading || isLocked}
+                    delay={0.8}
+                    sx={
+                      {
+                        mb: 3,
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                      }
+                    }
+                  >
+                    {loading ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : isLocked ? (
+                      `Locked (${lockoutTime}s)`
+                    ) : (
+                      'Sign In'
+                    )}
+                  </AnimatedButton>
+
+                  <Divider sx={{ my: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      OR CONTINUE WITH
+                    </Typography>
+                  </Divider>
+
+                  <Box sx={{ mb: 3 }}>
                     <SocialButton
                       provider="google"
-                      onClick={() => handleSocialLogin('Google')}
                       startIcon={<GoogleIcon />}
+                      onClick={() => handleSocialLogin('Google')}
+                      delay={0.9}
                     >
-                      Google
+                      Continue with Google
                     </SocialButton>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
                     <SocialButton
                       provider="github"
-                      onClick={() => handleSocialLogin('GitHub')}
                       startIcon={<GitHubIcon />}
+                      onClick={() => handleSocialLogin('GitHub')}
+                      delay={1.0}
                     >
-                      GitHub
+                      Continue with GitHub
                     </SocialButton>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
                     <SocialButton
                       provider="linkedin"
-                      onClick={() => handleSocialLogin('LinkedIn')}
                       startIcon={<LinkedInIcon />}
+                      onClick={() => handleSocialLogin('LinkedIn')}
+                      delay={1.1}
                     >
-                      LinkedIn
+                      Continue with LinkedIn
                     </SocialButton>
-                  </Grid>
-                </Grid>
+                  </Box>
 
-                <Box sx={{ mt: 3, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body1" align="center" color="text.secondary">
                     Don't have an account?{' '}
-                    <Link component={RouterLink} to="/signup" color="primary">
-                      Sign up
+                    <Link 
+                      component={RouterLink} 
+                      to="/register" 
+                      variant="body1" 
+                      color="primary"
+                      sx={{ fontWeight: 600, textDecoration: 'none' }}
+                    >
+                      Sign up here
                     </Link>
                   </Typography>
-                </Box>
-              </form>
-            </motion.div>
-          </Box>
-        </RightPanel>
-      </SplitContainer>
-    </StyledContainer>
+                </form>
+              </motion.div>
+            </FormContainer>
+          </RightPanel>
+        </SplitContainer>
+      </MainContainer>
+    </PageTransition>
   );
 };
 

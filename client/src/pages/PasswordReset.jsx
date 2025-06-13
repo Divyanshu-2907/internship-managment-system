@@ -34,6 +34,10 @@ import {
   Error as ErrorIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import { motion } from 'framer-motion';
+
+import PageTransition from '../components/PageTransition';
+import AnimatedButton from '../components/AnimatedButton';
 
 // Validation schemas for each step
 const emailSchema = yup.object({
@@ -106,7 +110,7 @@ const StepIcon = styled('div')(({ theme }) => ({
 // Form Step Components
 const EmailStep = ({ formik, onNext }) => (
   <Box>
-    <Typography variant="h6" gutterBottom>
+    <Typography variant="h6" gutterBottom fontWeight={600}>
       Enter Your Email
     </Typography>
     <Typography variant="body2" color="text.secondary" paragraph>
@@ -135,7 +139,7 @@ const EmailStep = ({ formik, onNext }) => (
 
 const VerificationStep = ({ formik, onNext, resendCode, canResend, countdown }) => (
   <Box>
-    <Typography variant="h6" gutterBottom>
+    <Typography variant="h6" gutterBottom fontWeight={600}>
       Enter Verification Code
     </Typography>
     <Typography variant="body2" color="text.secondary" paragraph>
@@ -182,7 +186,7 @@ const VerificationStep = ({ formik, onNext, resendCode, canResend, countdown }) 
 
 const PasswordStep = ({ formik, onNext, showPassword, setShowPassword }) => (
   <Box>
-    <Typography variant="h6" gutterBottom>
+    <Typography variant="h6" gutterBottom fontWeight={600}>
       Create New Password
     </Typography>
     <Typography variant="body2" color="text.secondary" paragraph>
@@ -243,22 +247,9 @@ const PasswordReset = () => {
   const theme = useTheme();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [canResend, setCanResend] = useState(true);
   const [countdown, setCountdown] = useState(0);
-
-  useEffect(() => {
-    let timer;
-    if (countdown > 0) {
-      timer = setInterval(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-    } else if (countdown === 0) {
-      setCanResend(true);
-    }
-    return () => clearInterval(timer);
-  }, [countdown]);
+  const [canResend, setCanResend] = useState(true);
 
   const formik = useFormik({
     initialValues: {
@@ -267,79 +258,66 @@ const PasswordReset = () => {
       newPassword: '',
       confirmPassword: '',
     },
-    validationSchema: [
-      emailSchema,
-      verificationSchema,
-      passwordSchema,
-    ][activeStep],
+    validationSchema: activeStep === 0 ? emailSchema : activeStep === 1 ? verificationSchema : passwordSchema,
     onSubmit: async (values) => {
       setLoading(true);
-      setError('');
-
       try {
-        switch (activeStep) {
-          case 0:
-            // Send verification code
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            toast.success('Verification code sent to your email');
-            setCanResend(false);
-            setCountdown(60);
-            break;
-
-          case 1:
-            // Verify code
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            if (values.verificationCode !== '123456') {
-              throw new Error('Invalid verification code');
-            }
-            break;
-
-          case 2:
-            // Reset password
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            toast.success('Password reset successful');
-            navigate('/login');
-            return;
-        }
-
-        setActiveStep(prevStep => prevStep + 1);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-        toast.error(err instanceof Error ? err.message : 'An error occurred');
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        toast.success('Password reset successfully!');
+        navigate('/login');
+      } catch (error) {
+        toast.error('Failed to reset password');
       } finally {
         setLoading(false);
       }
     },
   });
 
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setCanResend(true);
+    }
+  }, [countdown]);
+
+  const handleNext = async () => {
+    if (activeStep === steps.length - 1) {
+      await formik.handleSubmit();
+    } else {
+      setActiveStep(prevStep => prevStep + 1);
+      if (activeStep === 0) {
+        setCanResend(false);
+        setCountdown(60);
+      }
+    }
+  };
+
   const handleBack = () => {
     setActiveStep(prevStep => prevStep - 1);
-    setError('');
   };
 
   const handleResendCode = async () => {
-    setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Verification code resent to your email');
       setCanResend(false);
       setCountdown(60);
-    } catch (err) {
-      toast.error('Failed to resend verification code');
-    } finally {
-      setLoading(false);
+      toast.info('Verification code sent to your email');
+    } catch (error) {
+      toast.error('Failed to send verification code');
     }
   };
 
   const renderStepContent = (step) => {
     switch (step) {
       case 0:
-        return <EmailStep formik={formik} onNext={formik.handleSubmit} />;
+        return <EmailStep formik={formik} onNext={handleNext} />;
       case 1:
         return (
           <VerificationStep
             formik={formik}
-            onNext={formik.handleSubmit}
+            onNext={handleNext}
             resendCode={handleResendCode}
             canResend={canResend}
             countdown={countdown}
@@ -349,7 +327,7 @@ const PasswordReset = () => {
         return (
           <PasswordStep
             formik={formik}
-            onNext={formik.handleSubmit}
+            onNext={handleNext}
             showPassword={showPassword}
             setShowPassword={setShowPassword}
           />
@@ -360,76 +338,84 @@ const PasswordReset = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ minHeight: '100vh', py: 4, px: 2 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-          sx={{ mb: 2 }}
+    <PageTransition>
+      <Container maxWidth="xl">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          Back to Login
-        </Button>
+          <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+            <StyledPaper
+              component={motion.div}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h4" gutterBottom align="center" fontWeight={700}>
+                  Password Reset
+                </Typography>
+                <Typography variant="body2" color="text.secondary" align="center">
+                  Follow the steps to reset your password
+                </Typography>
+              </Box>
 
-        <StyledPaper>
-          <Typography variant="h4" gutterBottom align="center" color="primary">
-            Reset Password
-          </Typography>
-          <Typography variant="subtitle1" gutterBottom align="center" color="text.secondary">
-            Follow the steps below to reset your password
-          </Typography>
+              <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+                {steps.map((step, index) => (
+                  <Step key={step.label}>
+                    <StepLabel
+                      icon={
+                        <StepIcon>
+                          <step.icon />
+                        </StepIcon>
+                      }
+                    >
+                      {step.label}
+                    </StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
 
-          <Stepper activeStep={activeStep} alternativeLabel sx={{ my: 4 }}>
-            {steps.map((step, index) => (
-              <Step key={step.label}>
-                <StepLabel
-                  StepIconComponent={() => (
-                    <StepIcon>
-                      <step.icon />
-                    </StepIcon>
-                  )}
-                >
-                  {step.label}
-                </StepLabel>
-              </Step>
-            ))}
-          </Stepper>
+              <Box sx={{ mb: 4 }}>
+                {renderStepContent(activeStep)}
+              </Box>
 
-          <Fade in={true}>
-            <Box>
-              {error && (
-                <Alert
-                  severity="error"
-                  sx={{ mb: 2 }}
-                  icon={<ErrorIcon />}
-                >
-                  {error}
-                </Alert>
-              )}
-
-              {renderStepContent(activeStep)}
-
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-                <Button
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <AnimatedButton
+                  disabled={activeStep === 0}
                   onClick={handleBack}
-                  disabled={activeStep === 0 || loading}
                   startIcon={<ArrowBackIcon />}
+                  delay={0.3}
                 >
                   Back
-                </Button>
-                <Button
+                </AnimatedButton>
+                <AnimatedButton
                   variant="contained"
-                  onClick={formik.handleSubmit}
-                  disabled={loading}
-                  endIcon={loading ? <CircularProgress size={20} /> : null}
+                  onClick={handleNext}
+                  disabled={loading || !formik.isValid}
+                  delay={0.4}
                 >
-                  {activeStep === steps.length - 1 ? 'Reset Password' : 'Continue'}
-                </Button>
+                  {loading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : activeStep === steps.length - 1 ? (
+                    'Reset Password'
+                  ) : (
+                    'Next'
+                  )}
+                </AnimatedButton>
               </Box>
-            </Box>
-          </Fade>
-        </StyledPaper>
-      </Box>
-    </Container>
+
+              <Box sx={{ mt: 3, textAlign: 'center' }}>
+                <Link component={RouterLink} to="/login" variant="body2">
+                  Back to Login
+                </Link>
+              </Box>
+            </StyledPaper>
+          </Box>
+        </motion.div>
+      </Container>
+    </PageTransition>
   );
 };
 
